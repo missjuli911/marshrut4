@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Твой маршрут обучения</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --accent: #3564EB;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      
+      /* 6 фирменных цветов этапов */
+      --color-1: #3564EB; /* Синий */
+      --color-2: #ff6a00; /* Оранжевый */
+      --color-3: #10b981; /* Зелёный */
+      --color-4: #8b5cf6; /* Фиолетовый */
+      --color-5: #06b6d4; /* Бирюзовый */
+      --color-6: #e11d48; /* Малиновый */
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 36px 20px 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 760px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .instruction {
+      font-size: 15.5px;
+      color: var(--text-muted);
+      font-weight: 400;
+      line-height: 1.4;
+    }
+
+    /* 6 разноцветных ключей СВЕРХУ */
+    .keys-dock {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px 20px;
+      margin-bottom: 38px;
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      box-shadow: 0 3px 12px rgba(53, 100, 235, 0.05);
+    }
+
+    .key-btn {
+      width: 68px;
+      height: 68px;
+      border-radius: 14px;
+      background: #ffffff;
+      border: 2px solid transparent;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      user-select: none;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .key-btn:hover {
+      transform: translateY(-4px) scale(1.06);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+    }
+
+    .key-btn:active {
+      cursor: grabbing;
+      transform: scale(0.96);
+    }
+
+    .key-btn.selected {
+      border-color: var(--accent);
+      transform: translateY(-4px) scale(1.08);
+      box-shadow: 0 0 0 4px rgba(53, 100, 235, 0.18), 0 8px 18px rgba(0, 0, 0, 0.14);
+    }
+
+    .key-btn.used {
+      opacity: 0.18;
+      pointer-events: none;
+      filter: grayscale(1);
+      transform: none;
+      box-shadow: none;
+      border: 1px dashed #cbd5e1;
+    }
+
+    .key-svg {
+      width: 48px;
+      height: 48px;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    }
+
+    /* Вертикальный маршрут */
+    .route-timeline {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      padding-left: 10px;
+    }
+
+    .route-timeline::before {
+      content: "";
+      position: absolute;
+      top: 26px;
+      bottom: 26px;
+      left: 35px;
+      width: 4px;
+      background: var(--accent);
+      border-radius: 2px;
+      z-index: 1;
+    }
+
+    .stage-item {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      gap: 22px;
+      align-items: center;
+      min-height: 54px;
+    }
+
+    .stage-node-lock {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #ffbe85 0%, #ff6f00 45%, #d84800 85%, #943000 100%);
+      box-shadow: 0 5px 12px rgba(216, 72, 0, 0.35), inset 0 -2px 4px rgba(0,0,0,0.3);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+    }
+
+    .stage-node-lock:hover {
+      transform: scale(1.08);
+      box-shadow: 0 8px 16px rgba(216, 72, 0, 0.45);
+    }
+
+    .stage-node-lock.drag-over {
+      transform: scale(1.2);
+      box-shadow: 0 0 0 6px rgba(53, 100, 235, 0.25), 0 10px 24px rgba(0,0,0,0.3);
+    }
+
+    .lock-ring {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 2.5px solid var(--target-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.18);
+      transition: all 0.3s ease;
+    }
+
+    .lock-icon-svg {
+      width: 15px;
+      height: 15px;
+      overflow: visible;
+    }
+
+    .shackle {
+      stroke: var(--target-color);
+      transform-origin: 15px 8px;
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .lock-body {
+      fill: var(--target-color);
+      transition: fill 0.3s ease;
+    }
+
+    .stage-node-lock.drag-over .shackle,
+    .stage-item.unlocked .shackle {
+      transform: translateY(-5px) rotate(-35deg);
+    }
+
+    .stage-item.unlocked .stage-node-lock {
+      background: radial-gradient(circle at 35% 30%, #ffffff 0%, var(--target-color) 70%, #1e3a8a 100%);
+      box-shadow: 0 5px 14px rgba(53, 100, 235, 0.35);
+      transform: scale(1.05);
+    }
+
+    .stage-item.unlocked .lock-ring {
+      background: var(--target-color);
+      border-color: #ffffff;
+    }
+
+    .stage-item.unlocked .shackle {
+      stroke: #ffffff;
+    }
+
+    .stage-item.unlocked .lock-body {
+      fill: #ffffff;
+    }
+
+    .stage-item.unlocked .keyhole {
+      fill: var(--target-color);
+    }
+
+    .stage-content-card {
+      flex: 1;
+      display: none;
+      opacity: 0;
+      transform: translateX(-10px);
+      background: #ffffff;
+      border: 1.5px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 14px;
+      padding: 14px 18px;
+      box-shadow: 0 3px 14px rgba(53, 100, 235, 0.07);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .stage-item.unlocked .stage-content-card {
+      display: block;
+      opacity: 1;
+      transform: translateX(0);
+      animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .stage-title {
+      font-size: 16.5px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 5px;
+    }
+
+    .stage-text {
+      font-size: 14.5px;
+      line-height: 1.5;
+      color: var(--text-main);
+      font-weight: 400;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+
+    .shake {
+      animation: shake 0.35s ease-in-out;
+    }
+
+    @media (max-width: 600px) {
+      .keys-dock {
+        gap: 10px;
+        padding: 12px;
+      }
+      .key-btn {
+        width: 54px;
+        height: 54px;
+      }
+      .key-svg {
+        width: 38px;
+        height: 38px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Твой маршрут обучения</h1>
+      <div class="instruction">Подбери ключ к замку, чтобы узнать, что тебя ждет в курсе</div>
+    </header>
+
+    <!-- 6 разноцветных ключей СВЕРХУ -->
+    <div class="keys-dock">
+      <!-- Ключ 1: Синий (#3564EB) -->
+      <div class="key-btn" id="key-1" draggable="true" data-color="1">
+        <svg class="key-svg" viewBox="0 0 100 100">
+          <defs>
+            <radialGradient id="grad1" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stop-color="#8bb0ff" />
+              <stop offset="45%" stop-color="#3564EB" />
+              <stop offset="85%" stop-color="#1d40b0" />
+              <stop offset="100%" stop-color="#0e236b" />
+            </radialGradient>
+            <linearGradient id="metal1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#c8daff" />
+              <stop offset="50%" stop-color="#3564EB" />
+              <stop offset="100%" stop-color="#142f8a" />
+            </linearGradient>
+          </defs>
+          <circle cx="36" cy="40" r="24" fill="url(#grad1)" stroke="#ffffff" stroke-width="2"/>
+          <circle cx="36" cy="40" r="11" fill="#ffffff" />
+          <rect x="52" y="34" width="38" height="12" rx="4" fill="url(#metal1)" stroke="#ffffff" stroke-width="1.5"/>
+          <rect x="74" y="44" width="7" height="14" rx="2" fill="url(#metal1)" />
+          <rect x="83" y="44" width="6" height="10" rx="2" fill="url(#metal1)" />
+        </svg>
+      </div>
+
+      <!-- Ключ 2: Оранжевый (#ff6a00) -->
+      <div class="key-btn" id="key-2" draggable="true" data-color="2">
+        <svg class="key-svg" viewBox="0 0 100 100">
+          <defs>
+            <radialGradient id="grad2" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stop-color="#ffd099" />
+              <stop offset="45%" stop-color="#ff6a00" />
+              <stop offset="85%" stop-color="#c44300" />
+              <stop offset="100%" stop-color="#732400" />
+            </radialGradient>
+            <linearGradient id="metal2" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#ffe6cc" />
+              <stop offset="50%" stop-color="#ff6a00" />
+              <stop offset="100%" stop-color="#8a3000" />
+            </linearGradient>
+          </defs>
+          <circle cx="36" cy="40" r="24" fill="url(#grad2)" stroke="#ffffff" stroke-width="2"/>
+          <circle cx="36" cy="40" r="11" fill="#ffffff" />
+          <rect x="52" y="34" width="38" height="12" rx="4" fill="url(#metal2)" stroke="#ffffff" stroke-width="1.5"/>
+          <rect x="74" y="44" width="7" height="14" rx="2" fill="url(#metal2)" />
+          <rect x="83" y="44" width="6" height="10" rx="2" fill="url(#metal2)" />
+        </svg>
+      </div>
+
+      <!-- Ключ 3: Зелёный (#10b981) -->
+      <div class="key-btn" id="key-3" draggable="true" data-color="3">
+        <svg class="key-svg" viewBox="0 0 100 100">
+          <defs>
+            <radialGradient id="grad3" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stop-color="#a7f3d0" />
+              <stop offset="45%" stop-color="#10b981" />
+              <stop offset="85%" stop-color="#047857" />
+              <stop offset="100%" stop-color="#064e3b" />
+            </radialGradient>
+            <linearGradient id="metal3" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#d1fae5" />
+              <stop offset="50%" stop-color="#10b981" />
+              <stop offset="100%" stop-color="#065f46" />
+            </linearGradient>
+          </defs>
+          <circle cx="36" cy="40" r="24" fill="url(#grad3)" stroke="#ffffff" stroke-width="2"/>
+          <circle cx="36" cy="40" r="11" fill="#ffffff" />
+          <rect x="52" y="34" width="38" height="12" rx="4" fill="url(#metal3)" stroke="#ffffff" stroke-width="1.5"/>
+          <rect x="74" y="44" width="7" height="14" rx="2" fill="url(#metal3)" />
+          <rect x="83" y="44" width="6" height="10" rx="2" fill="url(#metal3)" />
+        </svg>
+      </div>
+
+      <!-- Ключ 4: Фиолетовый (#8b5cf6) -->
+      <div class="key-btn" id="key-4" draggable="true" data-color="4">
+        <svg class="key-svg" viewBox="0 0 100 100">
+          <defs>
+            <radialGradient id="grad4" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stop-color="#ddd6fe" />
+              <stop offset="45%" stop-color="#8b5cf6" />
+              <stop offset="85%" stop-color="#6d28d9" />
+              <stop offset="100%" stop-color="#4c1d95" />
+            </radialGradient>
+            <linearGradient id="metal4" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#ede9fe" />
+              <stop offset="50%" stop-color="#8b5cf6" />
+              <stop offset="100%" stop-color="#5b21b6" />
+            </linearGradient>
+          </defs>
+          <circle cx="36" cy="40" r="24" fill="url(#grad4)" stroke="#ffffff" stroke-width="2"/>
+          <circle cx="36" cy="40" r="11" fill="#ffffff" />
+          <rect x="52" y="34" width="38" height="12" rx="4" fill="url(#metal4)" stroke="#ffffff" stroke-width="1.5"/>
+          <rect x="74" y="44" width="7" height="14" rx="2" fill="url(#metal4)" />
+          <rect x="83" y="44" width="6" height="10" rx="2" fill="url(#metal4)" />
+        </svg>
+      </div>
+
+      <!-- Ключ 5: Бирюзовый (#06b6d4) -->
+      <div class="key-btn" id="key-5" draggable="true" data-color="5">
+        <svg class="key-svg" viewBox="0 0 100 100">
+          <defs>
+            <radialGradient id="grad5" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stop-color="#a5f3fc" />
+              <stop offset="45%" stop-color="#06b6d4" />
+              <stop offset="85%" stop-color="#0e7490" />
+              <stop offset="100%" stop-color="#164e63" />
+            </radialGradient>
+            <linearGradient id="metal5" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#c8daff" />
+              <stop offset="50%" stop-color="#06b6d4" />
+              <stop offset="100%" stop-color="#155e75" />
+            </linearGradient>
+          </defs>
+          <circle cx="36" cy="40" r="24" fill="url(#grad5)" stroke="#ffffff" stroke-width="2"/>
+          <circle cx="36" cy="40" r="11" fill="#ffffff" />
+          <rect x="52" y="34" width="38" height="12" rx="4" fill="url(#metal5)" stroke="#ffffff" stroke-width="1.5"/>
+          <rect x="74" y="44" width="7" height="14" rx="2" fill="url(#metal5)" />
+          <rect x="83" y="44" width="6" height="10" rx="2" fill="url(#metal5)" />
+        </svg>
+      </div>
+
+      <!-- Ключ 6: Малиновый (#e11d48) -->
+      <div class="key-btn" id="key-6" draggable="true" data-color="6">
+        <svg class="key-svg" viewBox="0 0 100 100">
+          <defs>
+            <radialGradient id="grad6" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stop-color="#fecdd3" />
+              <stop offset="45%" stop-color="#e11d48" />
+              <stop offset="85%" stop-color="#9f1239" />
+              <stop offset="100%" stop-color="#4c0519" />
+            </radialGradient>
+            <linearGradient id="metal6" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#ffe4e6" />
+              <stop offset="50%" stop-color="#e11d48" />
+              <stop offset="100%" stop-color="#881337" />
+            </linearGradient>
+          </defs>
+          <circle cx="36" cy="40" r="24" fill="url(#grad6)" stroke="#ffffff" stroke-width="2"/>
+          <circle cx="36" cy="40" r="11" fill="#ffffff" />
+          <rect x="52" y="34" width="38" height="12" rx="4" fill="url(#metal6)" stroke="#ffffff" stroke-width="1.5"/>
+          <rect x="74" y="44" width="7" height="14" rx="2" fill="url(#metal6)" />
+          <rect x="83" y="44" width="6" height="10" rx="2" fill="url(#metal6)" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Вертикальный маршрут из 6 точек -->
+    <div class="route-timeline">
+      <!-- Точка 1 -->
+      <div class="stage-item" id="stage-1" style="--target-color: var(--color-1);">
+        <div class="stage-node-lock" data-target="1">
+          <div class="lock-ring">
+            <svg class="lock-icon-svg" viewBox="0 0 24 24">
+              <path class="shackle" d="M7.5 9V5.5a4.5 4.5 0 0 1 9 0V9" fill="none" stroke-width="2.6" stroke-linecap="round"/>
+              <rect class="lock-body" x="4.5" y="9" width="15" height="12" rx="3"/>
+              <circle class="keyhole" cx="12" cy="14" r="1.3" fill="#ffffff"/>
+              <path class="keyhole" d="M12 15.3v2" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="stage-content-card">
+          <div class="stage-title">Понять идею</div>
+          <div class="stage-text">
+            Научишься объяснять, зачем создан TL: Ключ и какую проблему рынка он решает.
+          </div>
+        </div>
+      </div>
+
+      <!-- Точка 2 -->
+      <div class="stage-item" id="stage-2" style="--target-color: var(--color-2);">
+        <div class="stage-node-lock" data-target="2">
+          <div class="lock-ring">
+            <svg class="lock-icon-svg" viewBox="0 0 24 24">
+              <path class="shackle" d="M7.5 9V5.5a4.5 4.5 0 0 1 9 0V9" fill="none" stroke-width="2.6" stroke-linecap="round"/>
+              <rect class="lock-body" x="4.5" y="9" width="15" height="12" rx="3"/>
+              <circle class="keyhole" cx="12" cy="14" r="1.3" fill="#ffffff"/>
+              <path class="keyhole" d="M12 15.3v2" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="stage-content-card">
+          <div class="stage-title">Изучить инструмент</div>
+          <div class="stage-text">
+            Поймешь, в чем отличия TL: Ключа от OTA, модуля бронирования и собственных приложений отелей.
+          </div>
+        </div>
+      </div>
+
+      <!-- Точка 3 -->
+      <div class="stage-item" id="stage-3" style="--target-color: var(--color-3);">
+        <div class="stage-node-lock" data-target="3">
+          <div class="lock-ring">
+            <svg class="lock-icon-svg" viewBox="0 0 24 24">
+              <path class="shackle" d="M7.5 9V5.5a4.5 4.5 0 0 1 9 0V9" fill="none" stroke-width="2.6" stroke-linecap="round"/>
+              <rect class="lock-body" x="4.5" y="9" width="15" height="12" rx="3"/>
+              <circle class="keyhole" cx="12" cy="14" r="1.3" fill="#ffffff"/>
+              <path class="keyhole" d="M12 15.3v2" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="stage-content-card">
+          <div class="stage-title">Разберешься в возможностях</div>
+          <div class="stage-text">
+            Зная возможности инструмента, сможешь рассказывать о них отельерам.
+          </div>
+        </div>
+      </div>
+
+      <!-- Точка 4 -->
+      <div class="stage-item" id="stage-4" style="--target-color: var(--color-4);">
+        <div class="stage-node-lock" data-target="4">
+          <div class="lock-ring">
+            <svg class="lock-icon-svg" viewBox="0 0 24 24">
+              <path class="shackle" d="M7.5 9V5.5a4.5 4.5 0 0 1 9 0V9" fill="none" stroke-width="2.6" stroke-linecap="round"/>
+              <rect class="lock-body" x="4.5" y="9" width="15" height="12" rx="3"/>
+              <circle class="keyhole" cx="12" cy="14" r="1.3" fill="#ffffff"/>
+              <path class="keyhole" d="M12 15.3v2" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="stage-content-card">
+          <div class="stage-title">Оценишь пользу</div>
+          <div class="stage-text">
+            Сможешь показывать ценность инструмента для гостя и отеля.
+          </div>
+        </div>
+      </div>
+
+      <!-- Точка 5 -->
+      <div class="stage-item" id="stage-5" style="--target-color: var(--color-5);">
+        <div class="stage-node-lock" data-target="5">
+          <div class="lock-ring">
+            <svg class="lock-icon-svg" viewBox="0 0 24 24">
+              <path class="shackle" d="M7.5 9V5.5a4.5 4.5 0 0 1 9 0V9" fill="none" stroke-width="2.6" stroke-linecap="round"/>
+              <rect class="lock-body" x="4.5" y="9" width="15" height="12" rx="3"/>
+              <circle class="keyhole" cx="12" cy="14" r="1.3" fill="#ffffff"/>
+              <path class="keyhole" d="M12 15.3v2" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="stage-content-card">
+          <div class="stage-title">Изучишь позиционирование</div>
+          <div class="stage-text">
+            Научишься представлять инструмент в соответствии с официальной позицией TravelLine.
+          </div>
+        </div>
+      </div>
+
+      <!-- Точка 6 -->
+      <div class="stage-item" id="stage-6" style="--target-color: var(--color-6);">
+        <div class="stage-node-lock" data-target="6">
+          <div class="lock-ring">
+            <svg class="lock-icon-svg" viewBox="0 0 24 24">
+              <path class="shackle" d="M7.5 9V5.5a4.5 4.5 0 0 1 9 0V9" fill="none" stroke-width="2.6" stroke-linecap="round"/>
+              <rect class="lock-body" x="4.5" y="9" width="15" height="12" rx="3"/>
+              <circle class="keyhole" cx="12" cy="14" r="1.3" fill="#ffffff"/>
+              <path class="keyhole" d="M12 15.3v2" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="stage-content-card">
+          <div class="stage-title">Освоишь аргументацию</div>
+          <div class="stage-text">
+            Научишься отвечать на вопросы отельеров, опираясь на их задачи.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const keys = document.querySelectorAll('.key-btn');
+    const locks = document.querySelectorAll('.stage-node-lock');
+    let selectedKeyColor = null;
+
+    keys.forEach(key => {
+      key.addEventListener('dragstart', (e) => {
+        const color = key.getAttribute('data-color');
+        e.dataTransfer.setData('text/plain', color);
+      });
+
+      key.addEventListener('click', () => {
+        const color = key.getAttribute('data-color');
+        if (selectedKeyColor === color) {
+          deselect();
+        } else {
+          deselect();
+          selectedKeyColor = color;
+          key.classList.add('selected');
+        }
+      });
+    });
+
+    function deselect() {
+      selectedKeyColor = null;
+      keys.forEach(k => k.classList.remove('selected'));
+    }
+
+    locks.forEach(lock => {
+      const targetColor = lock.getAttribute('data-target');
+
+      lock.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        lock.classList.add('drag-over');
+      });
+
+      lock.addEventListener('dragleave', () => {
+        lock.classList.remove('drag-over');
+      });
+
+      lock.addEventListener('drop', (e) => {
+        e.preventDefault();
+        lock.classList.remove('drag-over');
+        const color = e.dataTransfer.getData('text/plain');
+        checkMatch(color, targetColor, lock);
+      });
+
+      lock.addEventListener('click', () => {
+        if (selectedKeyColor) {
+          checkMatch(selectedKeyColor, targetColor, lock);
+        } else {
+          lock.classList.add('shake');
+          setTimeout(() => lock.classList.remove('shake'), 350);
+        }
+      });
+    });
+
+    function checkMatch(keyColor, targetColor, lockElem) {
+      if (keyColor === targetColor) {
+        const stage = document.getElementById('stage-' + targetColor);
+        const key = document.getElementById('key-' + targetColor);
+        
+        stage.classList.add('unlocked');
+        key.classList.add('used');
+        key.setAttribute('draggable', 'false');
+        deselect();
+      } else {
+        lockElem.classList.add('shake');
+        setTimeout(() => lockElem.classList.remove('shake'), 350);
+      }
+    }
+  </script>
+</body>
+</html>
